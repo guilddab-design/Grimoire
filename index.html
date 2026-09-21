@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grimoire: spell builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;600;700&family=IM+Fell+English&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EDF1EB; --surface: #FFFFFF; --surface-2: #E1E8E0; --line: #C3CEC1;
+  --text: #1D2B29; --muted: #56655F; --brass: #8A6A1A; --brass-ink: #FFFFFF;
+  --verd: #2B7A67; --cinnabar: #A9432E; --shadow: 0 -6px 20px rgba(20,40,35,.12);
+  --display: "IM Fell English", "Iowan Old Style", Georgia, serif;
+  --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #172524; --surface: #1F302E; --surface-2: #283D3A; --line: #3A524E;
+    --text: #EAE2CC; --muted: #A2AE9F; --brass: #D5B05A; --brass-ink: #172524;
+    --verd: #7FC3AF; --cinnabar: #E3826B; --shadow: 0 -6px 24px rgba(0,0,0,.4); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #172524; --surface: #1F302E; --surface-2: #283D3A; --line: #3A524E;
+  --text: #EAE2CC; --muted: #A2AE9F; --brass: #D5B05A; --brass-ink: #172524;
+  --verd: #7FC3AF; --cinnabar: #E3826B; --shadow: 0 -6px 24px rgba(0,0,0,.4); color-scheme: dark;
+}
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 64px); -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.5 var(--body); }
+img { max-width: 100%; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+.masthead { max-width: 640px; margin: 0 auto; padding: 18px 16px 4px; }
+.masthead h1 { font: 400 2.1rem/1.1 var(--display); margin: 0; letter-spacing: .01em; }
+.masthead p { margin: 2px 0 0; color: var(--muted); font-size: .95rem; }
+
+.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  border-bottom: 1px solid var(--line); }
+.tabs div { max-width: 640px; margin: 0 auto; display: flex; padding: 0 8px; }
+.tabs button { flex: 1; background: none; border: 0; padding: 12px 4px 10px; font-size: 1.05rem; color: var(--muted);
+  border-bottom: 3px solid transparent; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--brass); }
+
+main { max-width: 640px; margin: 0 auto; padding: 8px 16px 40px; }
+main.has-bar { padding-bottom: 150px; }
+[hidden] { display: none !important; }
+
+section.block { padding: 18px 0 20px; border-bottom: 1px solid var(--line); }
+section.block:last-child { border-bottom: 0; }
+h2 { font: 400 1.45rem/1.2 var(--display); margin: 0 0 12px; }
+h3 { font: 600 1.05rem/1.3 var(--body); margin: 18px 0 6px; }
+.field { margin: 12px 0; }
+.field > span { display: block; font-size: .9rem; color: var(--muted); margin-bottom: 4px; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.row > .grow { flex: 1 1 160px; }
+.hint { color: var(--muted); font-size: .88rem; margin: 6px 0 0; }
+
+input[type=text], select { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; min-height: 44px; }
+
+.seg { display: flex; flex-wrap: wrap; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { flex: 1 1 auto; min-height: 40px; border: 0; background: none; border-radius: 8px; padding: 6px 10px;
+  cursor: pointer; color: var(--muted); font-size: .95rem; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.seg button small { display: block; font-size: .75rem; opacity: .8; }
+
+.step { display: inline-flex; align-items: center; background: var(--surface-2); border-radius: 10px; }
+.step button { width: 44px; height: 44px; border: 0; background: none; font-size: 1.4rem; cursor: pointer; color: var(--text); }
+.step button:disabled { opacity: .3; }
+.step output { min-width: 52px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.toggle input { width: 22px; height: 22px; accent-color: var(--brass); }
+
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 8px 0; }
+.item .row { margin-top: 8px; }
+.icon-btn { width: 44px; height: 44px; border: 0; background: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; flex: none; }
+.btn { min-height: 44px; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+  cursor: pointer; font-weight: 600; }
+.btn.primary { background: var(--brass); color: var(--brass-ink); border-color: var(--brass); }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+.ledger { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ledger td { padding: 5px 0; border-bottom: 1px dotted var(--line); }
+.ledger td:last-child { text-align: right; width: 4em; font-weight: 600; }
+.ledger tr.total td { border-bottom: 0; border-top: 2px solid var(--text); font-weight: 700; }
+.up { color: var(--cinnabar); } .down { color: var(--verd); }
+
+.verdict { margin-top: 14px; padding: 14px; border-radius: 10px; background: var(--surface-2); }
+.verdict strong { font: 400 1.9rem/1 var(--display); display: block; }
+.card-text { white-space: pre-wrap; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--brass);
+  border-radius: 8px; padding: 12px 14px; margin: 0; font: .95rem/1.5 var(--body); overflow-x: auto; }
+.warn { color: var(--cinnabar); font-weight: 600; }
+
+.mini-dcs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 10px 0 6px; text-align: center; }
+.mini-dcs div { border: 1px solid var(--brass); border-radius: 8px; padding: 2px 0; }
+.mini-dcs b { display: block; font: 400 1.35rem/1.1 var(--display); }
+.mini-dcs span { font-size: .72rem; color: var(--muted); }
+.facts { display: grid; grid-template-columns: 5.5em 1fr; gap: 3px 10px; margin: 8px 0; font-size: .95rem; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.flavor { font-style: italic; margin: 6px 0; }
+
+/* The one loud element: the difficulty seals */
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); box-shadow: var(--shadow);
+  border-top: 1px solid var(--line); padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); }
+.bar-inner { max-width: 640px; margin: 0 auto; }
+.seals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.seal { text-align: center; border: 1.5px solid var(--brass); border-radius: 999px; padding: 4px 0 3px; color: var(--text); background: none; cursor: pointer; }
+.seal b { display: block; font: 400 1.7rem/1 var(--display); font-variant-numeric: lining-nums; }
+.seal span { font-size: .75rem; color: var(--muted); }
+.seal[aria-pressed="true"] { background: var(--brass); color: var(--brass-ink); }
+.seal[aria-pressed="true"] span { color: var(--brass-ink); opacity: .85; }
+.bar-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: .9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar-meta b { color: var(--text); }
+
+.spell { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.spell h3 { font: 400 1.3rem/1.2 var(--display); margin: 0; }
+.spell .meta { color: var(--muted); font-size: .9rem; }
+.spell .nums { font-variant-numeric: tabular-nums; margin: 6px 0; }
+.spell .note { font-size: .9rem; color: var(--cinnabar); margin: 6px 0; }
+.empty { color: var(--muted); }
+
+.rules p, .rules li { max-width: 68ch; }
+.rules ul { padding-left: 1.2em; }
+.rules li { margin: 4px 0; }
+.rules table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.rules th, .rules td { text-align: left; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.rules th { font-weight: 600; color: var(--muted); font-size: .9rem; }
+.scroll { overflow-x: auto; }
+.ruling { border-left: 4px solid var(--verd); padding: 6px 12px; margin: 12px 0; background: var(--surface); border-radius: 0 8px 8px 0; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .95rem; }
+.toc a { color: var(--verd); }
+@media (prefers-reduced-motion: no-preference) { .seal { transition: background .15s, color .15s; } }
+
+#toast { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 60px); z-index: 10;
+  background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <h1>Grimoire</h1>
+  <p>Spell builder for the Traveller fantasy rules</p>
+</header>
+<nav class="tabs" aria-label="Sections"><div role="tablist">
+  <button role="tab" id="tab-build" aria-controls="panel-build">Build</button>
+  <button role="tab" id="tab-spells" aria-controls="panel-spells">Spells</button>
+  <button role="tab" id="tab-rules" aria-controls="panel-rules">Rules</button>
+</div></nav>
+<main>
+  <div id="panel-build" role="tabpanel"></div>
+  <div id="panel-spells" role="tabpanel" hidden></div>
+  <div id="panel-rules" role="tabpanel" hidden><div class="rules">
+<section class="block">
+  <h2>Magic rules</h2>
+  <nav class="toc" aria-label="Rules sections">
+    <a href="#r-cast">Casting</a><a href="#r-dc">Difficulty</a><a href="#r-fx">Effects</a><a href="#r-mp">Magic points</a>
+    <a href="#r-resist">Resisting</a><a href="#r-learn">Spontaneous and practiced</a><a href="#r-ongoing">Ongoing effects</a>
+    <a href="#r-summon">Summoning</a><a href="#r-create">Creation</a>
+  </nav>
+</section>
+
+<section class="block" id="r-cast">
+  <h2>Casting</h2>
+  <p>Roll <b>2D + Magic(Skill)</b> against the spell's difficulty. Magic(Skill) is one of the traditions: Miracle, Heroism, Alchemy, Divination, Shamanism, Witchcraft, Hedge Magic, Hermetic Magecraft, Weapon Arts, Fae Magic, Sensing, Shadow Magic, Anti-Magic, Precognition, Elementalist.</p>
+  <p>If the spell's method doesn't fit the tradition used, the difficulty rises by <b>+2</b>.</p>
+  <p>Reagents are consumed when the spell is cast. Catalysts are not.</p>
+</section>
+
+<section class="block" id="r-dc">
+  <h2>Building the difficulty</h2>
+  <p>Start at <b>8</b> and apply every line that fits.</p>
+  <div class="scroll"><table>
+    <tr><th>Spell property</th><th>DC</th></tr>
+    <tr><td>Each Minor effect</td><td>+0</td></tr>
+    <tr><td>Major effect, 2D</td><td>+2, then +2 per extra die</td></tr>
+    <tr><td>Each effect past the first</td><td>+1</td></tr>
+    <tr><td>Target self or a held object</td><td>+0</td></tr>
+    <tr><td>Target others</td><td>+1 per target (count yourself if included)</td></tr>
+    <tr><td>Target an area</td><td>+1 per side: 1 square +1, 2&times;2 (4 squares) +2, 3&times;3 (9 squares) +3</td></tr>
+    <tr><td>Target out of line of sight</td><td>+2</td></tr>
+    <tr><td>Range 50 / 100 / 500 m / 1 / 5 km</td><td>+0 / +1 / +2 / +3 / +4</td></tr>
+    <tr><td>Duration instant, 1D min, 1D hr, 1D days</td><td>+0 / +1 / +2 / +3</td></tr>
+    <tr><td>Permanent</td><td>+4</td></tr>
+    <tr><td>Believable to the local population</td><td>&minus;1</td></tr>
+    <tr><td>Unbelievable</td><td>+2</td></tr>
+    <tr><td>Correct catalyst</td><td>&minus;1</td></tr>
+    <tr><td>Effect Level above or below skill</td><td>&plusmn;1 per point of difference</td></tr>
+    <tr><td>Off-tradition method</td><td>+2</td></tr>
+  </table></div>
+  <h3>When you cast it</h3>
+  <div class="scroll"><table>
+    <tr><th>Choice</th><th>DC</th></tr>
+    <tr><td>Minor action</td><td>+2</td></tr>
+    <tr><td>Action</td><td>+0</td></tr>
+    <tr><td>Ritual, 1D minutes / 1D hours</td><td>&minus;2 / &minus;4</td></tr>
+    <tr><td>Reagent spent</td><td>&minus;1 to &minus;3 by quality</td></tr>
+    <tr><td>Extra MP spent</td><td>1st &minus;2; 2nd grants a boon; each after &minus;1</td></tr>
+    <tr><td>Practiced spell</td><td>+2 DM to the roll</td></tr>
+  </table></div>
+  <p class="hint">Spell cards list DCs before reagents, extra MP and the practiced bonus, so every card reads the same way.</p>
+</section>
+
+<section class="block" id="r-fx">
+  <h2>Effects</h2>
+  <p>The effects define the spell. Target, range and duration don't: a self-targeted heal cast on a friend is the same spell with Target other +1. Add or remove an effect and it's a new spell.</p>
+  <p><b>Effect Level</b> is the sum of effect values: 1 per Minor, 1 per die for a Major (2D = 2). A spell costs <b>1 MP per Effect Level</b>.</p>
+  <h3>Reading the effect scale</h3>
+  <ul>
+    <li><b>Attribute change</b> means damage or healing, since damage in Traveller lands on the physical attributes. 1D of damage or healing is a Minor. A Major starts at 2D.</li>
+    <li>Healing can't raise an attribute past its natural value. <b>Raising an attribute</b> is a separate buff: each +1 point is its own Minor, and buffs can exceed natural value.</li>
+    <li>1D of attribute change is worth &plusmn;1 to a skill. Six points of armor is one Minor.</li>
+    <li>Armor applies separately to each effect of a spell.</li>
+    <li>At Magic 5, a Major costs +1 per die instead of +2. A skill at 5 can also be used in unrealistic ways: Stealth 5 from magic can cross an open field unseen.</li>
+  </ul>
+  <h3>Minor effects</h3>
+  <p>Grant a boon. Make something usable as a reaction. Heal 1D or cure a minor ailment. 1D attribute change. Raise or lower an attribute by 1. Six points of armor. Harmless sensory illusion. Conjure one size-1 creature. Repair a broken (not destroyed) object. Sense danger, a natural thing, or tomorrow's weather with certainty. Attribute shift: use a different attribute for a skill. Undo natural bonds such as knots. Lull a creature that is drowsy, already asleep, or willing to sleep. Change your shape and appearance (bonus or penalty by size). +1.5 m movement. Protect a creature from normal weather.</p>
+  <p>If it isn't on the list and doesn't seem game-breaking, allow it as a Minor.</p>
+  <h3>Major effects</h3>
+  <p>Inflict a bane. Force an awake, alert creature to sleep. Turn an action into a minor action. Any attribute change of 2D or more. Summoning and creation (below).</p>
+</section>
+
+<section class="block" id="r-mp">
+  <h2>Magic points</h2>
+  <ul>
+    <li><b>Maximum MP</b> = the sum of all your Magic skills + 2 &times; INT DM + END DM, minimum 1.</li>
+    <li><b>Weekly recovery:</b> at the start of each week roll 1D + END DM and regain it evenly across the week, rounding down each day.</li>
+    <li><b>Rest:</b> a full day of rest restores 1 + INT DM, on top of weekly recovery.</li>
+    <li>Spent MP doesn't recover while any of your non-permanent effects are still active.</li>
+    <li><b>Permanent effects lock MP.</b> A permanent buff removes its Effect Level from your maximum for as long as it lasts. Restorative spells (healing, repair, creation) resolve once and lock nothing.</li>
+    <li>Going below 0 MP forces you to end one of your active non-permanent effects, if you have any. Spend Luck to avoid this, once per reduction.</li>
+    <li>Extra MP can go two ways: lower the DC (see the table above), or <b>empower</b> the spell, adding +1 Effect Level per MP to make it harder to resist. The higher Effect Level also counts against your skill, so empowering past your skill raises the DC.</li>
+  </ul>
+  <h3>Maximum MP calculator</h3>
+  <div id="mp-calc"></div>
+</section>
+
+<section class="block" id="r-resist">
+  <h2>Resisting</h2>
+  <p>A target of an unwanted spell may resist as a reaction: <b>2D + Magic(Skill) &ge; Effect Level + 8</b>. Spending 1 MP gives the roll a boon.</p>
+  <p>Anyone untrained in magic rolls at &minus;3, so ordinary people almost never shake off a spell. That's intended: mundanes are highly vulnerable to magic.</p>
+</section>
+
+<section class="block" id="r-learn">
+  <h2>Spontaneous and practiced spells</h2>
+  <ul>
+    <li><b>Spontaneous</b> spells are built on the spot. If one fails, it can't be cast again with the same Magic(Skill).</li>
+    <li>You know <b>1 + EDU DM</b> practiced spells. Each is written out with the formula and grants +2 DM to cast.</li>
+    <li>A spontaneous spell that succeeds may be taken as a practiced spell.</li>
+    <li>Practiced spells can also be learned from a text, by rote, or from a teacher. Learning this way ignores the failure lockout.</li>
+    <li><b>Rote:</b> each month of work on a spell gives +1 on its first casting.</li>
+  </ul>
+</section>
+
+<section class="block" id="r-ongoing">
+  <h2>Ongoing effects</h2>
+  <ul>
+    <li>Buffs and debuffs don't stack on attributes, skills or most other effects.</li>
+    <li>Remove an existing buff before replacing it. Debuffs apply the highest value.</li>
+    <li>Ending your own effect takes one action per Effect Level. Powerful spells take a long time to unravel.</li>
+    <li>Effects run without concentration. Adding a concentration clause to a group of effects is itself an effect: Minor, or Major if the group contains a Major.</li>
+  </ul>
+</section>
+
+<section class="block" id="r-summon">
+  <h2>Summoning</h2>
+  <h3>Wildlife</h3>
+  <p>One Major summons creatures up to the cow-or-horse row; larger animals need a second Major. Summoned creatures aren't controlled. Control is another Major. Don't forget duration.</p>
+  <div class="scroll"><table>
+    <tr><th>Row</th><th>Animal</th><th>Number summoned</th></tr>
+    <tr><td>1</td><td>Mouse or rat</td><td>5D</td></tr>
+<tr><td>2</td><td>Cat or raccoon</td><td>4D</td></tr>
+<tr><td>3</td><td>Badger or dog</td><td>3D</td></tr>
+<tr><td>4</td><td>Chimpanzee or goat</td><td>2D</td></tr>
+<tr><td>5</td><td>Human</td><td>1D</td></tr>
+<tr><td>6</td><td>Cow or horse</td><td>1</td></tr>
+<tr><td>7</td><td>Shark</td><td>1, needs 2 Majors</td></tr>
+<tr><td>8</td><td>Rhino</td><td>1, needs 2 Majors</td></tr>
+<tr><td>9</td><td>Elephant</td><td>1, needs 2 Majors</td></tr>
+<tr><td>10</td><td>Carnosaur</td><td>1, needs 2 Majors</td></tr>
+<tr><td>11</td><td>Sauropod or whale</td><td>1, needs 2 Majors</td></tr>
+  </table></div>
+  <p class="hint">A single size-1 creature (row 1) is only a Minor.</p>
+  <h3>Magical creatures</h3>
+  <p>A magical creature must be bound by a pact first. Summoning a pact-bound creature is then a Major.</p>
+  <p><b>Forced pact:</b> a Major, targeting other, with Effect Level equal to the creature's Magic(Skill). The creature may resist as normal.</p>
+</section>
+
+<section class="block" id="r-create">
+  <h2>Creation</h2>
+  <ul>
+    <li><b>Transformation:</b> changing one substance into another is a Major. The Effect Level needed rises by 1 per 10 CU of value. No value may be gained in the change.</li>
+    <li><b>Creation from nothing:</b> a Major whose Effect Level must equal the item's CU value.</li>
+  </ul>
+</section>
+
+</div>
+</div>
+</main>
+<div class="bar" id="bar" aria-label="Spell difficulty"></div>
+<div id="toast" role="status" hidden></div>
+<script>
+// ---- data.js ----
+// Static tables and example spells. Pure data, no DOM.
+const DATA = {
+  traditions: ["Miracle","Heroism","Alchemy","Divination","Shamanism","Witchcraft","Hedge Magic",
+    "Hermetic Magecraft","Weapon Arts","Fae Magic","Sensing","Shadow Magic","Anti-Magic","Precognition","Elementalist"],
+  ranges: [
+    { label: "50 m", dc: 0 }, { label: "100 m", dc: 1 }, { label: "500 m", dc: 2 },
+    { label: "1 km", dc: 3 }, { label: "5 km", dc: 4 }
+  ],
+  durations: [
+    { id: "instant", label: "Instant", long: "Instant / one turn", dc: 0 },
+    { id: "min", label: "1D min", long: "1D minutes", dc: 1 },
+    { id: "hr", label: "1D hr", long: "1D hours", dc: 2 },
+    { id: "day", label: "1D days", long: "1D days", dc: 3 },
+    { id: "perm", label: "Perm.", long: "Permanent", dc: 4 }
+  ],
+  speeds: [
+    { id: "minor", label: "Minor", long: "Minor action", dc: 2 },
+    { id: "action", label: "Action", long: "Action", dc: 0 },
+    { id: "r1", label: "1D min", long: "Ritual, 1D minutes", dc: -2 },
+    { id: "r2", label: "1D hr", long: "Ritual, 1D hours", dc: -4 }
+  ],
+  beliefs: [
+    { id: "believable", label: "Believable", dc: -1 },
+    { id: "neutral", label: "Neither", dc: 0 },
+    { id: "unbelievable", label: "Unbelievable", dc: 2 }
+  ],
+  presets: [
+    ["Heal 1D or cure a minor ailment", "minor"], ["1D damage", "minor"], ["+1 to a skill", "minor"],
+    ["Raise an attribute +1", "minor"], ["Six points of armor", "minor"], ["+6 AP", "minor"],
+    ["Grant a boon", "minor"], ["Usable as a reaction", "minor"],
+    ["Attribute shift (use another attribute for a skill)", "minor"],
+    ["Sense danger", "minor"], ["Sense a natural thing", "minor"], ["Know tomorrow's weather", "minor"],
+    ["Harmless sensory illusion", "minor"], ["Conjure one size-1 creature", "minor"],
+    ["Repair a broken object", "minor"], ["Undo natural bonds", "minor"], ["Lull a drowsy, sleeping or willing creature to sleep", "minor"],
+    ["Change shape and appearance", "minor"], ["+1.5 m movement", "minor"], ["Protect from weather", "minor"],
+    ["Inflict a bane", "major"], ["Force an awake, alert creature to sleep", "major"], ["Action becomes a minor action", "major"], ["2D damage", "major"],
+    ["Summon wildlife", "major"], ["Control summoned creatures", "major"], ["Summon a pact creature", "major"],
+    ["Force a pact", "major"], ["Transform a substance", "major"], ["Create from nothing", "major"]
+  ]
+};
+
+const minor = (label) => ({ label, size: "minor", dice: 2 });
+const major = (label, dice) => ({ label, size: "major", dice });
+const self = { mode: "self", count: 1, side: 1 };
+const others = (n) => ({ mode: "other", count: n, side: 1 });
+
+DATA.examples = [
+  { name: "Rend", author: "", tradition: "Weapon Arts", skill: 2,
+    effects: [minor("+1D damage"), minor("+6 AP")], target: self, duration: "min", belief: "believable",
+    catalyst: "Family sword",
+    reagents: [{ name: "Magnet", tier: 1 }, { name: "Eye of a toothed whale", tier: 2 }, { name: "Fang of a winged serpent", tier: 3 }],
+    flavor: "For 1D minutes your attacks with the family sword deal +1D damage and have AP 6." },
+  { name: "Healing Prayer", author: "Tanner (Artuli Delvecchio)", tradition: "Miracle", skill: 1,
+    effects: [minor("Heal 1D or cure a minor ailment")], target: self, duration: "perm", restorative: true,
+    belief: "believable", catalyst: "Finger of a saint",
+    reagents: [{ name: "Holy water", tier: 1 }, { name: "Piece of the True Cross", tier: 2 }, { name: "Saint's tears", tier: 3 }],
+    flavor: "Invoke the name of a saint to pray for healing.",
+    note: "Written as self. Casting it on someone else adds Target other +1 (Action 11) without making it a new spell." },
+  { name: "Flesh of Achilles", author: "", tradition: "Heroism", skill: 4,
+    effects: [major("+24 armor", 4)], target: self, duration: "perm", belief: "unbelievable", catalyst: "",
+    reagents: [{ name: "Water of the Styx, covering the whole body", tier: 3 }],
+    flavor: "Your skin becomes impenetrable, like a hero from the age of gods." },
+  { name: "Mind of Thoth (X = 2)", author: "", tradition: "Hermetic Magecraft", skill: 2,
+    effects: [minor("Raise INT +1"), minor("Raise INT +1")], target: self, duration: "hr", belief: "believable",
+    catalyst: "Papyrus scroll", reagents: [{ name: "Ibis brain", tier: 1 }],
+    flavor: "For 1D hours raise INT by X. Add or remove INT +1 rows to change X." },
+  { name: "Eye of the Storm", author: "", tradition: "Elementalist", skill: 4,
+    effects: [major("2D damage", 2), minor("+6 AP"), minor("Usable as a reaction")], target: others(1), duration: "min",
+    belief: "unbelievable", catalyst: "Lightning rod", reagents: [{ name: "Lightning glass", tier: 2 }],
+    flavor: "A storm cloud gathers around you and strikes at enemies as a reaction.",
+    note: "Corrected: the sheet listed Action 13; Unbelievable +2 had been left out. Priced as one target. If it strikes everything within 50 m, switch Target to Area." },
+  { name: "Luck", author: "", tradition: "Hedge Magic", skill: 2,
+    effects: [minor("+1 to a skill"), minor("Change the skill once per round as a reaction")], target: self, duration: "min",
+    belief: "believable", catalyst: "Double-headed coin", reagents: [{ name: "Four-leaf clover", tier: 1 }],
+    flavor: "For 1D minutes gain +1 to a skill.",
+    note: "Corrected: Effect Level is 2, not 1. The sheet already charged 2 MP." },
+  { name: "Genius (+1)", author: "", tradition: "", skill: 1,
+    effects: [minor("+1 to a Magic skill")], target: self, duration: "perm", belief: "believable", catalyst: "",
+    reagents: [{ name: "Da Vinci's soul", tier: 2 }],
+    flavor: "The mind of a master.",
+    note: "Under the MP-lock rule, each permanent rank costs max MP for as long as it lasts." },
+  { name: "Blessing of Hubertus", author: "Luke Brown", tradition: "Sensing", skill: 1, practiced: true,
+    effects: [minor("+1 to a skill")], target: self, duration: "hr", belief: "believable",
+    catalyst: "Earl of Desmond's hunting gloves",
+    reagents: [{ name: "Taste of the earth and a pinch of bloodhound hair", tier: 1 }],
+    flavor: "For 1D hours gain +1 to a skill.",
+    note: "The sheet's DCs (Action 5) had the reagent and practiced bonus folded in. The card now shows the base DC." },
+  { name: "Know the Path (Scitote Viam)", author: "Peter", tradition: "", skill: 1,
+    effects: [minor("Attribute shift (use another attribute for a skill)")], target: others(2), duration: "min",
+    belief: "believable", catalyst: "Pendant of Saint Thomas Aquinas", reagents: [],
+    flavor: "Caster and one companion may use a different attribute for a skill." },
+  { name: "Ward against spirits", author: "Peter (Turba Philosophorum)", tradition: "", skill: 1,
+    effects: [minor("Protect an area from spirits")], target: { mode: "area", count: 1, side: 3 }, duration: "min",
+    belief: "believable", catalyst: "(unnamed)", reagents: [{ name: "(unnamed)", tier: 1 }],
+    flavor: "Nine squares are shielded from spirits for 1D minutes." },
+  { name: "Ominus Intellectus", author: "Nick (Sworn Book of Honorius)", tradition: "", skill: 2,
+    effects: [minor("Language (any) to 1"), minor("Boon on that language")], target: self, duration: "day",
+    belief: "believable", catalyst: "(unnamed)", reagents: [{ name: "High-quality ink and a gold pen", tier: 1 }],
+    flavor: "Speak, read and write a chosen language for 1D days." },
+  { name: "Ahiyawoka (Speak to Us)", author: "Luke Tiner", tradition: "", skill: 2,
+    effects: [minor("Raise INT +1"), minor("Language (Spanish) +1")], target: others(1), duration: "min",
+    belief: "believable", catalyst: "Tongue of a parrot", reagents: [],
+    flavor: "The target briefly understands and speaks Spanish.",
+    note: "Completed: duration +1 and the DCs were missing on the sheet." }
+];
+
+// ---- suggested.js ----
+// New example spells, one or more per tradition. Uses helpers from data.js.
+const area = (side) => ({ mode: "area", count: 1, side });
+DATA.suggested = [
+  { name: "Intercession of Saint Christopher", author: "Suggested", tradition: "Miracle", skill: 2,
+    effects: [minor("Protect from weather"), minor("Boon on Survival and Navigation")], target: others(4), duration: "day",
+    belief: "believable", catalyst: "Saint Christopher medal",
+    reagents: [{ name: "Blessed candle", tier: 1 }, { name: "Cloth touched to a relic", tier: 2 }],
+    flavor: "A travelling party of four walks through storm and snow as if in spring, and never loses the road." },
+  { name: "Roland's Last Stand", author: "Suggested", tradition: "Heroism", skill: 3,
+    effects: [minor("Six points of armor"), minor("+1 to Melee"), minor("Usable as a reaction")], target: self, duration: "min",
+    belief: "believable", catalyst: "An oliphant (war horn)", reagents: [{ name: "Wine poured for a fallen comrade", tier: 1 }],
+    flavor: "Sound the horn as a reaction when outnumbered. For 1D minutes you gain 6 armor and +1 Melee." },
+  { name: "Lesser Transmutation", author: "Suggested", tradition: "Alchemy", skill: 3,
+    effects: [major("Transform a substance (up to 20 CU of value)", 2)], target: self, duration: "perm", restorative: true,
+    belief: "believable", catalyst: "Glass alembic",
+    reagents: [{ name: "Quicksilver", tier: 1 }, { name: "Sulphur of Tartary", tier: 2 }, { name: "Prima materia", tier: 3 }],
+    flavor: "Iron nails become copper nails of the same worth. No value may be gained, which is why every alchemist dies poor." },
+  { name: "Sortes Virgilianae", author: "Suggested", tradition: "Divination", skill: 1,
+    effects: [minor("Sense danger")], target: self, duration: "day",
+    belief: "believable", catalyst: "A battered Aeneid", reagents: [],
+    flavor: "Open the book at random and read the first line your thumb falls on. For 1D days, the GM warns you before danger strikes." },
+  { name: "Nahual of the Jaguar", author: "Suggested", tradition: "Shamanism", skill: 3,
+    effects: [minor("Change shape and appearance (jaguar)"), minor("Raise STR +1"), minor("Raise DEX +1"), minor("+1 to Melee (unarmed)")],
+    target: self, duration: "hr", belief: "believable", catalyst: "Obsidian mirror",
+    reagents: [{ name: "Copal incense", tier: 1 }, { name: "Jaguar pelt", tier: 2 }],
+    flavor: "Take the shape of the jaguar for 1D hours.",
+    note: "Believable among the Nahua. In a Spanish town it becomes Unbelievable, +3 DC." },
+  { name: "Evil Eye", author: "Suggested", tradition: "Witchcraft", skill: 3,
+    effects: [major("Inflict a bane on all rolls", 2)], target: others(1), duration: "day", belief: "believable",
+    catalyst: "Wax poppet", reagents: [{ name: "Hair or nail of the target", tier: 2 }],
+    flavor: "A long look and a muttered word, and the target's luck sours for 1D days. Mundanes resist on 10+ at \u22123." },
+  { name: "The Familiar's Call", author: "Suggested", tradition: "Witchcraft", skill: 4,
+    effects: [major("Summon wildlife: cats (row 2, 4D of them)", 2), major("Control summoned creatures", 2)],
+    target: area(3), duration: "hr", belief: "believable", catalyst: "Saucer of milk", reagents: [{ name: "Black cat's whisker", tier: 1 }],
+    flavor: "4D cats pour out of the alleys and obey you for 1D hours." },
+  { name: "Wind-knots", author: "Suggested", tradition: "Hedge Magic", skill: 1,
+    effects: [minor("+1 to Seafarer"), minor("Boon on Seafarer")], target: others(1), duration: "hr", belief: "believable",
+    catalyst: "Three-knotted tarred cord", reagents: [{ name: "Silver penny paid by the sailor", tier: 1 }],
+    flavor: "Sold on the quay at Bergen. Untie a knot and the wind comes.",
+    note: "Effect Level 2 on skill 1 shows the +1 penalty for reaching above your skill." },
+  { name: "Hermes' Sleeping Lamp", author: "Suggested", tradition: "Hermetic Magecraft", skill: 2,
+    effects: [major("Force an awake, alert creature to sleep", 2)], target: others(3), duration: "min", belief: "believable",
+    catalyst: "Oil lamp engraved with a caduceus", reagents: [{ name: "Tincture of poppy", tier: 1 }],
+    flavor: "Three alert guards drop where they stand for 1D minutes.",
+    note: "Alert targets make this a Major. Against drowsy night-watchmen it's a Minor: Action 9, 1 MP." },
+  { name: "Riposte of Carranza", author: "Suggested", tradition: "Weapon Arts", skill: 3,
+    effects: [major("Action becomes a minor action (rapier attacks)", 2)], target: self, duration: "min", belief: "believable",
+    catalyst: "Toledo rapier", reagents: [],
+    flavor: "La Verdadera Destreza made geometry. For 1D minutes, attacks with the rapier are minor actions." },
+  { name: "Changeling's Glamour", author: "Suggested", tradition: "Fae Magic", skill: 3,
+    effects: [minor("Change shape and appearance"), minor("Harmless sensory illusion"), minor("Boon on Deception")],
+    target: self, duration: "hr", belief: "believable", catalyst: "Elf-shot flint arrowhead",
+    reagents: [{ name: "Dew from a fairy ring", tier: 1 }],
+    flavor: "Wear another's face, voice and smell for 1D hours.",
+    note: "Believable in Connacht. Neutral or Unbelievable in Madrid." },
+  { name: "Water-witching", author: "Suggested", tradition: "Sensing", skill: 1,
+    effects: [minor("Sense a natural thing (water or ore)")], target: self, duration: "hr", belief: "believable",
+    catalyst: "Forked hazel rod", reagents: [],
+    flavor: "The rod dips over the nearest spring or seam for 1D hours." },
+  { name: "Hand of Glory", author: "Suggested", tradition: "Shadow Magic", skill: 2,
+    effects: [minor("Lull a drowsy, sleeping or willing creature to sleep")], target: area(4), duration: "hr", belief: "believable",
+    catalyst: "Hand of Glory", reagents: [{ name: "Candle of a hanged man's tallow", tier: 2 }],
+    flavor: "Light the candle in the dead hand at night. Those asleep in a 4\u00d74 area cannot wake for 1D hours.",
+    note: "Minor because it works only on sleepers and the drowsy. An awake guard in the area needs the Major version: Action 14, 2 MP, resist 10+." },
+  { name: "Bell, Book and Candle", author: "Suggested", tradition: "Anti-Magic", skill: 2,
+    effects: [major("Inflict a bane on casting magic", 2)], target: others(1), duration: "hr", belief: "believable",
+    catalyst: "Consecrated handbell", reagents: [{ name: "Candle snuffed at the words of excommunication", tier: 2 }],
+    flavor: "The sorcerer casts with a bane for 1D hours. They may resist on Effect Level + 8." },
+  { name: "Born with a Caul", author: "Suggested", tradition: "Precognition", skill: 2,
+    effects: [minor("Sense danger"), minor("Usable as a reaction")], target: self, duration: "hr", belief: "believable",
+    catalyst: "Your dried birth caul", reagents: [],
+    flavor: "For 1D hours you see the blow a heartbeat before it comes." },
+  { name: "Greek Fire", author: "Suggested", tradition: "Elementalist", skill: 3,
+    effects: [major("3D damage", 3)], target: area(2), range: 1, duration: "instant", belief: "unbelievable",
+    catalyst: "Bronze siphon", reagents: [{ name: "Naphtha", tier: 2 }],
+    flavor: "The lost fire of Byzantium engulfs a 2\u00d72 area up to 100 m away. It burns on water.",
+    note: "Too hard to cast in combat on purpose. As a 1D-minute ritual with naphtha it's DC 12: a siege weapon, not a duel spell." }
+];
+
+// ---- engine.js ----
+// Pure spell math. compute(spell, table) -> result. No DOM.
+function blankSpell() {
+  return { id: null, name: "", author: "", tradition: "", skill: 1, practiced: false, effects: [],
+    target: { mode: "self", count: 1, side: 1 }, outOfSight: false, range: 0, duration: "instant",
+    restorative: false, belief: "neutral", catalyst: "", mismatch: false, reagents: [], flavor: "", note: "" };
+}
+function normalizeSpell(s) {
+  const b = blankSpell();
+  const out = Object.assign(b, JSON.parse(JSON.stringify(s)));
+  out.target = Object.assign({ mode: "self", count: 1, side: 1 }, out.target);
+  return out;
+}
+function blankTable() { return { speed: "action", reagent: -1, mpDc: 0, mpEl: 0, other: 0 }; }
+
+const sgn = (n) => (n > 0 ? "+" + n : n < 0 ? "\u2212" + -n : "+0");
+
+function effectDc(e, skill) {
+  if (e.size === "minor") return 0;
+  const extra = e.dice - 1;               // 2D -> 1 step, 3D -> 2 steps...
+  return skill >= 5 ? extra : 2 * extra;  // Magic 5+: +1 per die instead of +2
+}
+
+function compute(s, t) {
+  t = t || blankTable();
+  const parts = [];
+  const add = (label, dc) => parts.push({ label, dc });
+  add("Base", 8);
+
+  let el = 0, effDc = 0;
+  s.effects.forEach((e) => { el += e.size === "minor" ? 1 : e.dice; effDc += effectDc(e, s.skill); });
+  if (s.effects.length) add("Effect size", effDc);
+  const multi = Math.max(0, s.effects.length - 1);
+  if (multi) add("Multiple effects", multi);
+
+  const mode = s.target.mode;
+  if (mode === "self") add("Target self", 0);
+  else if (mode === "other") add(s.target.count === 1 ? "Target 1 other" : "Target " + s.target.count, s.target.count);
+  else add("Area " + s.target.side + "\u00d7" + s.target.side, s.target.side);
+  if (mode !== "self") {
+    if (s.outOfSight) add("Out of sight", 2);
+    const r = DATA.ranges[s.range]; if (r.dc) add("Range " + r.label, r.dc);
+  }
+  const d = DATA.durations.find((x) => x.id === s.duration);
+  add("Duration: " + d.long, d.dc);
+  const b = DATA.beliefs.find((x) => x.id === s.belief);
+  if (b.dc) add(b.label, b.dc);
+  if (s.catalyst.trim()) add("Catalyst", -1);
+  if (s.mismatch) add("Off-tradition", 2);
+  const diff = el - s.skill;
+  if (diff) add("Effect Level vs skill", diff);
+
+  const action = parts.reduce((a, p) => a + p.dc, 0);
+  const dcs = {}; DATA.speeds.forEach((sp) => (dcs[sp.id] = action + sp.dc));
+
+  // At the table
+  const reagent = t.reagent >= 0 && s.reagents[t.reagent] ? s.reagents[t.reagent].tier : 0;
+  let mpDc = 0; if (t.mpDc >= 1) mpDc -= 2; if (t.mpDc >= 3) mpDc -= t.mpDc - 2;
+  const boon = t.mpDc >= 2;
+  const tableDc = dcs[t.speed] - reagent + mpDc + t.mpEl; // empowering raises EL, so the EL-vs-skill penalty too
+  const dm = s.skill + (s.practiced ? 2 : 0) + t.other;
+  const need = tableDc - dm;
+  return {
+    parts, el, action, dcs, tableDc, need, boon, chance: chance(need, boon),
+    mp: el + t.mpDc + t.mpEl, resist: el + t.mpEl + 8,
+    lock: s.duration === "perm" && !s.restorative ? el : 0
+  };
+}
+
+// Probability that 2D (or best two of 3D with a boon) >= need.
+function chance(need, boon) {
+  let hit = 0, total = 0;
+  const n = boon ? 3 : 2;
+  const roll = (k, dice) => {
+    if (k === n) {
+      const sum = dice.slice().sort((a, b) => b - a).slice(0, 2).reduce((a, x) => a + x, 0);
+      total++; if (sum >= need) hit++; return;
+    }
+    for (let f = 1; f <= 6; f++) roll(k + 1, dice.concat(f));
+  };
+  roll(0, []);
+  return hit / total;
+}
+
+function targetText(s) {
+  const m = s.target.mode;
+  let tgt = m === "self" ? "Self" : m === "other" ? s.target.count + (s.target.count === 1 ? " other" : " targets")
+    : s.target.side + "\u00d7" + s.target.side + " squares";
+  if (m !== "self") tgt += ", range " + DATA.ranges[s.range].label + (s.outOfSight ? ", out of sight" : "");
+  return tgt;
+}
+function effectText(e) { return e.label + (e.size === "minor" ? " (Minor)" : " (Major " + e.dice + "D)"); }
+function reagentText(s) { return s.reagents.map((x) => (x.name || "Reagent") + " \u2212" + x.tier).join("; "); }
+
+function describe(s, r) {
+  const L = [];
+  const trad = s.tradition ? s.tradition + " " + s.skill : "Magic " + s.skill;
+  L.push((s.name || "Untitled spell") + " (" + trad + ")" + (s.author ? ", " + s.author : ""));
+  if (s.effects.length)
+    L.push("Effects: " + s.effects.map((e) => e.label + (e.size === "minor" ? " [Minor]" : " [Major " + e.dice + "D]")).join("; "));
+  const m = s.target.mode;
+  let tgt = m === "self" ? "Self (+0)" : m === "other" ? s.target.count + (s.target.count === 1 ? " other" : " targets") + " (" + sgn(s.target.count) + ")"
+    : s.target.side + "\u00d7" + s.target.side + " squares (" + sgn(s.target.side) + ")";
+  if (m !== "self") tgt += ", range " + DATA.ranges[s.range].label + " (" + sgn(DATA.ranges[s.range].dc) + ")" + (s.outOfSight ? ", out of sight (+2)" : "");
+  L.push("Target: " + tgt);
+  const d = DATA.durations.find((x) => x.id === s.duration);
+  L.push("Duration: " + d.long + " (" + sgn(d.dc) + ")");
+  const mods = r.parts.filter((p) => ["Multiple effects", "Catalyst", "Believable", "Unbelievable", "Off-tradition", "Effect Level vs skill"].includes(p.label))
+    .map((p) => (p.label === "Catalyst" ? "Catalyst: " + s.catalyst.trim() : p.label) + " (" + sgn(p.dc) + ")");
+  if (mods.length) L.push("Modifiers: " + mods.join("; "));
+  L.push("Effect Level " + r.el + ", cost " + r.el + " MP, resist " + (r.el + 8) + "+");
+  L.push("DC: Minor " + r.dcs.minor + " / Action " + r.dcs.action + " / 1D min " + r.dcs.r1 + " / 1D hr " + r.dcs.r2);
+  if (s.reagents.length) L.push("Reagents (use one): " + s.reagents.map((x) => x.name + " \u2212" + x.tier).join("; "));
+  if (r.lock) L.push("Locks " + r.lock + " MP from max while it lasts.");
+  if (s.flavor) L.push(s.flavor);
+  return L.join("\n");
+}
+
+if (false) module.exports = { compute, describe, blankSpell, normalizeSpell, blankTable, chance, sgn };
+
+// ---- ui-kit.js ----
+// Tiny DOM helpers and form controls.
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v === false || v == null) continue;
+    if (k.startsWith("on")) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === "class") el.className = v;
+    else if (k === "value") el.value = v;
+    else if (k === "checked") el.checked = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  kids.flat(Infinity).forEach((c) => { if (c != null && c !== false) el.append(c.nodeType ? c : document.createTextNode(String(c))); });
+  return el;
+}
+function field(label, control, hint) {
+  return h("div", { class: "field" }, h("span", {}, label), control, hint ? h("p", { class: "hint" }, hint) : null);
+}
+function segmented(options, current, onChange, aria) {
+  const wrap = h("div", { class: "seg", role: "group", "aria-label": aria || "" });
+  options.forEach((o) => {
+    const b = h("button", { type: "button", "aria-pressed": String(o.value === current),
+      onClick: () => { wrap.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); onChange(o.value); } },
+      o.label, o.sub != null ? h("small", {}, o.sub) : null);
+    wrap.append(b);
+  });
+  return wrap;
+}
+function stepper(value, min, max, onChange, fmt, aria) {
+  fmt = fmt || String;
+  const out = h("output", {}, fmt(value));
+  const minus = h("button", { type: "button", "aria-label": "Decrease " + (aria || "") });
+  const plus = h("button", { type: "button", "aria-label": "Increase " + (aria || "") });
+  minus.textContent = "\u2212"; plus.textContent = "+";
+  const set = (v) => { value = v; out.textContent = fmt(v); minus.disabled = v <= min; plus.disabled = v >= max; onChange(v); };
+  minus.addEventListener("click", () => value > min && set(value - 1));
+  plus.addEventListener("click", () => value < max && set(value + 1));
+  minus.disabled = value <= min; plus.disabled = value >= max;
+  return h("div", { class: "step" }, minus, out, plus);
+}
+function toggle(label, checked, onChange) {
+  return h("label", { class: "toggle" }, h("input", { type: "checkbox", checked, onChange: (e) => onChange(e.target.checked) }), label);
+}
+
+// ---- store.js ----
+// Per-device storage for saved spells and the current draft.
+const Store = {
+  get(key, fallback) { try { const v = localStorage.getItem("grimoire." + key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } },
+  set(key, val) { try { localStorage.setItem("grimoire." + key, JSON.stringify(val)); } catch (e) { /* storage unavailable */ } },
+  spells() { return this.get("spells", []); },
+  saveSpell(s) {
+    const list = this.spells();
+    if (!s.id) s.id = "s" + Date.now().toString(36);
+    const i = list.findIndex((x) => x.id === s.id);
+    if (i >= 0) list[i] = s; else list.unshift(s);
+    this.set("spells", list); return s;
+  },
+  deleteSpell(id) { this.set("spells", this.spells().filter((x) => x.id !== id)); }
+};
+
+// ---- builder.js ----
+// Spell builder tab: form, live ledger, table roll, card output, sticky seals.
+const Builder = (() => {
+  let spell = normalizeSpell(Store.get("draft", blankSpell()));
+  let table = blankTable();
+  let root, bar;
+  const presetMap = Object.fromEntries(DATA.presets);
+
+  const changed = () => update();
+  const rebuild = () => { render(); update(); };
+
+  function spellSection() {
+    return h("section", { class: "block" }, h("h2", {}, "Spell"),
+      field("Name", h("input", { type: "text", value: spell.name, placeholder: "Untitled spell", onInput: (e) => { spell.name = e.target.value; changed(); } })),
+      field("Caster or source", h("input", { type: "text", value: spell.author, placeholder: "Optional", onInput: (e) => { spell.author = e.target.value; changed(); } })),
+      h("div", { class: "row" },
+        h("div", { class: "grow" }, field("Tradition",
+          h("select", { onChange: (e) => { spell.tradition = e.target.value; changed(); } },
+            h("option", { value: "" }, "Unspecified"),
+            DATA.traditions.map((t) => h("option", { value: t, selected: t === spell.tradition }, t))))),
+        field("Skill level", stepper(spell.skill, 0, 6, (v) => { spell.skill = v; rebuild(); }, String, "skill"))),
+      toggle("Practiced spell (+2 DM)", spell.practiced, (v) => { spell.practiced = v; changed(); }),
+      toggle("Method doesn't fit the tradition (+2)", spell.mismatch, (v) => { spell.mismatch = v; changed(); }));
+  }
+
+  function effectRow(e, i) {
+    return h("div", { class: "item" },
+      h("div", { class: "row" },
+        h("input", { type: "text", class: "grow", value: e.label, list: "presets", placeholder: "Describe the effect",
+          "aria-label": "Effect " + (i + 1),
+          onInput: (ev) => { e.label = ev.target.value; changed(); },
+          onChange: (ev) => { const p = presetMap[ev.target.value]; if (p && p !== e.size) { e.size = p; rebuild(); } } }),
+        h("button", { type: "button", class: "icon-btn", "aria-label": "Remove effect", onClick: () => { spell.effects.splice(i, 1); rebuild(); } }, "\u2715")),
+      h("div", { class: "row" },
+        segmented([{ value: "minor", label: "Minor", sub: "+0" }, { value: "major", label: "Major", sub: "2D+" }], e.size,
+          (v) => { e.size = v; rebuild(); }, "Effect size"),
+        e.size === "major" ? stepper(e.dice, 2, 10, (v) => { e.dice = v; changed(); }, (v) => v + "D", "dice") : null));
+  }
+
+  function effectsSection() {
+    return h("section", { class: "block" }, h("h2", {}, "Effects"),
+      spell.effects.length ? null : h("p", { class: "hint" }, "Add an effect to start. Each Minor is Effect Level 1; a Major is 1 per die."),
+      spell.effects.map(effectRow),
+      h("div", { class: "btn-row" }, h("button", { type: "button", class: "btn", onClick: () => { spell.effects.push({ label: "", size: "minor", dice: 2 }); rebuild(); } }, "Add effect")),
+      h("datalist", { id: "presets" }, DATA.presets.map(([l]) => h("option", { value: l }))));
+  }
+
+  function targetSection() {
+    const t = spell.target;
+    return h("section", { class: "block" }, h("h2", {}, "Target and duration"),
+      segmented([{ value: "self", label: "Self" }, { value: "other", label: "Others" }, { value: "area", label: "Area" }], t.mode,
+        (v) => { t.mode = v; rebuild(); }, "Target"),
+      h("p", { class: "hint" }, "Changing target, range or duration doesn't make it a new spell. Only effects do."),
+      t.mode === "other" ? field("Targets, counting yourself if included", stepper(t.count, 1, 20, (v) => { t.count = v; changed(); }, (v) => v + " (+" + v + ")", "targets")) : null,
+      t.mode === "area" ? field("Area side, in squares", stepper(t.side, 1, 12, (v) => { t.side = v; changed(); }, (v) => v + "\u00d7" + v, "area"), "+1 per side: a 3\u00d73 area is +3.") : null,
+      t.mode !== "self" ? [
+        field("Range", segmented(DATA.ranges.map((r, i) => ({ value: i, label: r.label, sub: sgn(r.dc) })), spell.range, (v) => { spell.range = v; changed(); }, "Range")),
+        toggle("Target out of line of sight (+2)", spell.outOfSight, (v) => { spell.outOfSight = v; changed(); })] : null,
+      field("Duration", segmented(DATA.durations.map((d) => ({ value: d.id, label: d.label, sub: sgn(d.dc) })), spell.duration, (v) => { spell.duration = v; rebuild(); }, "Duration")),
+      spell.duration === "perm" ? toggle("Restorative: healing, repair or creation (doesn't lock MP)", spell.restorative, (v) => { spell.restorative = v; changed(); }) : null);
+  }
+
+  function modifiersSection() {
+    return h("section", { class: "block" }, h("h2", {}, "Belief and components"),
+      field("How the locals see it", segmented(DATA.beliefs.map((b) => ({ value: b.id, label: b.label, sub: sgn(b.dc) })), spell.belief, (v) => { spell.belief = v; changed(); }, "Belief")),
+      field("Catalyst (kept, \u22121)", h("input", { type: "text", value: spell.catalyst, placeholder: "None", onInput: (e) => { spell.catalyst = e.target.value; changed(); } })),
+      h("h3", {}, "Reagents (consumed, use one per cast)"),
+      spell.reagents.map((r, i) => h("div", { class: "item" },
+        h("div", { class: "row" },
+          h("input", { type: "text", class: "grow", value: r.name, placeholder: "Reagent", "aria-label": "Reagent name", onInput: (e) => { r.name = e.target.value; changed(); } }),
+          h("button", { type: "button", class: "icon-btn", "aria-label": "Remove reagent", onClick: () => { spell.reagents.splice(i, 1); table.reagent = -1; rebuild(); } }, "\u2715")),
+        h("div", { class: "row" }, segmented([1, 2, 3].map((n) => ({ value: n, label: "\u2212" + n })), r.tier, (v) => { r.tier = v; rebuild(); }, "Reagent quality")))),
+      h("div", { class: "btn-row" }, h("button", { type: "button", class: "btn", onClick: () => { spell.reagents.push({ name: "", tier: 1 }); rebuild(); } }, "Add reagent")),
+      field("Description", h("input", { type: "text", value: spell.flavor, placeholder: "What the table sees", onInput: (e) => { spell.flavor = e.target.value; changed(); } })));
+  }
+
+  function tableSection() {
+    return h("section", { class: "block" }, h("h2", {}, "At the table"),
+      field("Casting time", segmented(DATA.speeds.map((s) => ({ value: s.id, label: s.label, sub: sgn(s.dc) })), table.speed, (v) => { table.speed = v; changed(); }, "Casting time")),
+      spell.reagents.length ? field("Reagent spent", segmented([{ value: -1, label: "None" }].concat(spell.reagents.map((r, i) => ({ value: i, label: (r.name || "Reagent") , sub: "\u2212" + r.tier }))), table.reagent, (v) => { table.reagent = v; changed(); }, "Reagent spent")) : null,
+      field("Extra MP to lower the DC", stepper(table.mpDc, 0, 10, (v) => { table.mpDc = v; changed(); }, String, "extra MP"), "1st: \u22122. 2nd: boon. Each after: \u22121."),
+      field("Extra MP to empower (harder to resist)", stepper(table.mpEl, 0, 10, (v) => { table.mpEl = v; changed(); }, String, "empower MP"), "+1 Effect Level each, which also raises the Effect-Level-vs-skill penalty."),
+      field("Other DM (rote, circumstance)", stepper(table.other, -6, 6, (v) => { table.other = v; changed(); }, sgn, "other DM")),
+      h("div", { class: "verdict", id: "verdict" }));
+  }
+
+  function outputSection() {
+    return h("section", { class: "block" }, h("h2", {}, "How the DC adds up"),
+      h("div", { class: "scroll" }, h("table", { class: "ledger", id: "ledger" })),
+      h("h2", { style: "margin-top:22px" }, "Spell card"),
+      h("pre", { class: "card-text", id: "card" }),
+      h("div", { class: "btn-row" },
+        h("button", { type: "button", class: "btn primary", onClick: save }, "Save spell"),
+        h("button", { type: "button", class: "btn", id: "copy", onClick: copy }, "Copy card"),
+        h("button", { type: "button", class: "btn", onClick: () => { load(blankSpell()); } }, "New spell")));
+  }
+
+  function render() {
+    const y = window.scrollY;
+    root.replaceChildren(spellSection(), effectsSection(), targetSection(), modifiersSection(), tableSection(), outputSection());
+    window.scrollTo(0, y);
+  }
+
+  function renderBar(r) {
+    bar.replaceChildren(h("div", { class: "bar-inner" },
+      h("div", { class: "seals" }, DATA.speeds.map((sp) =>
+        h("button", { type: "button", class: "seal", "aria-pressed": String(sp.id === table.speed), "aria-label": sp.long + " DC " + r.dcs[sp.id],
+          onClick: () => { table.speed = sp.id; rebuild(); } }, h("b", {}, r.dcs[sp.id]), h("span", {}, sp.label)))),
+      h("div", { class: "bar-meta" },
+        h("span", {}, "EL ", h("b", {}, r.el)), h("span", {}, "Cost ", h("b", {}, r.mp + " MP")),
+        h("span", {}, "Resist ", h("b", {}, r.resist + "+")), h("span", {}, "Roll ", h("b", {}, Math.round(r.chance * 100) + "%")))));
+  }
+
+  function update() {
+    const r = compute(spell, table);
+    renderBar(r);
+    const ledger = document.getElementById("ledger");
+    ledger.replaceChildren(...r.parts.map((p) => h("tr", {}, h("td", {}, p.label), h("td", { class: p.dc > 0 && p.label !== "Base" ? "up" : p.dc < 0 ? "down" : "" }, p.label === "Base" ? p.dc : sgn(p.dc)))),
+      h("tr", { class: "total" }, h("td", {}, "Action DC"), h("td", {}, r.action)));
+    const sp = DATA.speeds.find((s) => s.id === table.speed);
+    document.getElementById("verdict").replaceChildren(...[
+      h("strong", {}, r.need > 12 ? "Can't succeed" : r.need <= 2 ? "Automatic" : "Need " + r.need + "+"),
+      h("div", {}, sp.long + ", DC " + r.tableDc + ". Roll " + (r.boon ? "3D keep best 2" : "2D") + " " + sgn(spell.skill + (spell.practiced ? 2 : 0) + table.other) + ": " + Math.round(r.chance * 100) + "% chance."),
+      r.lock ? h("div", { class: "warn" }, "Permanent: locks " + r.lock + " MP from the caster's maximum while it lasts.") : null,
+      !spell.effects.length ? h("div", { class: "hint" }, "No effects yet.") : null].filter(Boolean));
+    document.getElementById("card").textContent = describe(spell, r);
+    Store.set("draft", spell);
+  }
+
+  function save() {
+    if (!spell.name.trim()) spell.name = "Untitled spell";
+    spell = normalizeSpell(Store.saveSpell(JSON.parse(JSON.stringify(spell))));
+    rebuild();
+    App.toast("Saved to Spells");
+  }
+  function copy() {
+    const text = document.getElementById("card").textContent;
+    const done = () => App.toast("Card copied");
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => App.toast("Copy blocked here. Long-press the card to copy."));
+    else App.toast("Long-press the card to copy.");
+  }
+  function load(s) { spell = normalizeSpell(s); table = blankTable(); rebuild(); window.scrollTo(0, 0); }
+
+  function mount(rootEl, barEl) { root = rootEl; bar = barEl; rebuild(); }
+  return { mount, load };
+})();
+
+// ---- spells.js ----
+// Spells tab: saved spells plus corrected examples from the notes.
+const Spells = (() => {
+  let root;
+  const fact = (k, v) => [h("dt", {}, k), h("dd", {}, v)];
+  function card(raw, saved) {
+    const s = normalizeSpell(raw), r = compute(s);
+    const trad = (s.tradition || "Magic") + " " + s.skill;
+    return h("div", { class: "spell" },
+      h("h3", {}, s.name || "Untitled spell"),
+      h("div", { class: "meta" }, trad + (s.author ? ", " + s.author : "")),
+      s.flavor ? h("div", { class: "flavor" }, s.flavor) : null,
+      h("div", { class: "mini-dcs", "aria-label": "Difficulty by casting time" }, DATA.speeds.map((sp) =>
+        h("div", {}, h("b", {}, r.dcs[sp.id]), h("span", {}, sp.label)))),
+      h("div", { class: "nums" }, "Effect Level " + r.el + ", " + r.el + " MP, resist " + (r.el + 8) + "+" + (r.lock ? ", locks " + r.lock + " MP" : "")),
+      h("dl", { class: "facts" },
+        fact("Effects", s.effects.map(effectText).join("; ")),
+        fact("Target", targetText(s)),
+        fact("Duration", DATA.durations.find((d) => d.id === s.duration).long),
+        fact("Catalyst", s.catalyst.trim() ? s.catalyst.trim() + " (kept)" : "None"),
+        fact("Reagents", s.reagents.length ? reagentText(s) + " (consumed, pick one)" : "None"),
+        fact("Belief", DATA.beliefs.find((b) => b.id === s.belief).label + (s.mismatch ? "; off-tradition" : "")),
+        s.practiced ? fact("Practiced", "+2 DM to cast") : null),
+      s.note ? h("div", { class: "note" }, s.note) : null,
+      h("div", { class: "btn-row" },
+        h("button", { type: "button", class: "btn primary", onClick: () => { const c = JSON.parse(JSON.stringify(raw)); if (!saved) c.id = null; Builder.load(c); App.show("build"); } }, "Open in builder"),
+        saved ? h("button", { type: "button", class: "btn", onClick: () => { if (confirm("Delete " + (s.name || "this spell") + "? This can't be undone.")) { Store.deleteSpell(s.id); render(); } } }, "Delete") : null));
+  }
+  function render() {
+    const saved = Store.spells();
+    root.replaceChildren(
+      h("section", { class: "block" }, h("h2", {}, "Saved on this device"),
+        saved.length ? saved.map((s) => card(s, true)) : h("p", { class: "empty" }, "Nothing saved yet. Build a spell and tap Save spell.")),
+      h("section", { class: "block" }, h("h2", {}, "From the campaign notes"),
+        h("p", { class: "hint" }, "Recalculated with the current rules. Corrections are marked."),
+        DATA.examples.map((s) => card(s, false))),
+      h("section", { class: "block" }, h("h2", {}, "More examples, by tradition"),
+        DATA.suggested.map((s) => card(s, false))));
+  }
+  function mount(el) { root = el; render(); }
+  return { mount, render };
+})();
+
+// ---- rules.js ----
+// Rules tab: static rulebook plus the MP calculator.
+const Rules = (() => {
+  function mpCalc(el) {
+    const st = { skills: 1, int: 0, end: 0 };
+    const out = h("div", { class: "verdict" });
+    const upd = () => {
+      const max = Math.max(1, st.skills + 2 * st.int + st.end);
+      out.replaceChildren(h("strong", {}, max + " MP"),
+        h("div", {}, "Weekly recovery 1D " + sgn(st.end) + ". A rest day restores " + Math.max(0, 1 + st.int) + "."));
+    };
+    el.replaceChildren(
+      h("div", { class: "row" },
+        field("All Magic skills, added", stepper(st.skills, 0, 30, (v) => { st.skills = v; upd(); }, String, "magic skills")),
+        field("INT DM", stepper(st.int, -3, 3, (v) => { st.int = v; upd(); }, sgn, "INT DM")),
+        field("END DM", stepper(st.end, -3, 3, (v) => { st.end = v; upd(); }, sgn, "END DM"))),
+      out);
+    upd();
+  }
+  function mount(root) {
+    mpCalc(root.querySelector("#mp-calc"));
+  }
+  return { mount };
+})();
+
+// ---- app.js ----
+// Tabs, toast, startup.
+const App = (() => {
+  const tabs = ["build", "spells", "rules"];
+  function show(id) {
+    tabs.forEach((t) => {
+      document.getElementById("panel-" + t).hidden = t !== id;
+      document.getElementById("tab-" + t).setAttribute("aria-selected", String(t === id));
+    });
+    document.getElementById("bar").hidden = id !== "build";
+    document.querySelector("main").classList.toggle("has-bar", id === "build");
+    if (id === "spells") Spells.render();
+    window.scrollTo(0, 0);
+  }
+  let timer;
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(timer); timer = setTimeout(() => (t.hidden = true), 2200);
+  }
+  function start() {
+    tabs.forEach((t) => document.getElementById("tab-" + t).addEventListener("click", () => show(t)));
+    Builder.mount(document.getElementById("panel-build"), document.getElementById("bar"));
+    Spells.mount(document.getElementById("panel-spells"));
+    Rules.mount(document.getElementById("panel-rules"));
+    show("build");
+  }
+  return { show, toast, start };
+})();
+document.addEventListener("DOMContentLoaded", App.start);
+
+</script>
+</body>
+</html>
