@@ -211,10 +211,10 @@ input[type=text], select { width: 100%; background: var(--surface); border: 1px 
     <li>At Magic 5, a Major costs +1 per die instead of +2. A skill at 5 can also be used in unrealistic ways: Stealth 5 from magic can cross an open field unseen.</li>
   </ul>
   <h3>Minor effects</h3>
-  <p>Grant a boon. Make something usable as a reaction. Heal 1D or cure a minor ailment. 1D attribute change. Raise or lower an attribute by 1. Six points of armor. Harmless sensory illusion. Conjure one size-1 creature. Repair a broken (not destroyed) object. Sense danger, a natural thing, or tomorrow's weather with certainty. Attribute shift: use a different attribute for a skill. Undo natural bonds such as knots. Lull a creature to sleep. Change your shape and appearance (bonus or penalty by size). +1.5 m movement. Protect a creature from normal weather.</p>
+  <p>Grant a boon. Make something usable as a reaction. Heal 1D or cure a minor ailment. 1D attribute change. Raise or lower an attribute by 1. Six points of armor. Harmless sensory illusion. Conjure one size-1 creature. Repair a broken (not destroyed) object. Sense danger, a natural thing, or tomorrow's weather with certainty. Attribute shift: use a different attribute for a skill. Undo natural bonds such as knots. Lull a creature that is drowsy, already asleep, or willing to sleep. Change your shape and appearance (bonus or penalty by size). +1.5 m movement. Protect a creature from normal weather.</p>
   <p>If it isn't on the list and doesn't seem game-breaking, allow it as a Minor.</p>
   <h3>Major effects</h3>
-  <p>Inflict a bane. Turn an action into a minor action. Any attribute change of 2D or more. Summoning and creation (below).</p>
+  <p>Inflict a bane. Force an awake, alert creature to sleep. Turn an action into a minor action. Any attribute change of 2D or more. Summoning and creation (below).</p>
 </section>
 
 <section class="block" id="r-mp">
@@ -331,9 +331,9 @@ const DATA = {
     ["Attribute shift (use another attribute for a skill)", "minor"],
     ["Sense danger", "minor"], ["Sense a natural thing", "minor"], ["Know tomorrow's weather", "minor"],
     ["Harmless sensory illusion", "minor"], ["Conjure one size-1 creature", "minor"],
-    ["Repair a broken object", "minor"], ["Undo natural bonds", "minor"], ["Lull a creature to sleep", "minor"],
+    ["Repair a broken object", "minor"], ["Undo natural bonds", "minor"], ["Lull a drowsy, sleeping or willing creature to sleep", "minor"],
     ["Change shape and appearance", "minor"], ["+1.5 m movement", "minor"], ["Protect from weather", "minor"],
-    ["Inflict a bane", "major"], ["Action becomes a minor action", "major"], ["2D damage", "major"],
+    ["Inflict a bane", "major"], ["Force an awake, alert creature to sleep", "major"], ["Action becomes a minor action", "major"], ["2D damage", "major"],
     ["Summon wildlife", "major"], ["Control summoned creatures", "major"], ["Summon a pact creature", "major"],
     ["Force a pact", "major"], ["Transform a substance", "major"], ["Create from nothing", "major"]
   ]
@@ -446,9 +446,10 @@ DATA.suggested = [
     flavor: "Sold on the quay at Bergen. Untie a knot and the wind comes.",
     note: "Effect Level 2 on skill 1 shows the +1 penalty for reaching above your skill." },
   { name: "Hermes' Sleeping Lamp", author: "Suggested", tradition: "Hermetic Magecraft", skill: 2,
-    effects: [minor("Lull a creature to sleep")], target: others(3), duration: "min", belief: "believable",
+    effects: [major("Force an awake, alert creature to sleep", 2)], target: others(3), duration: "min", belief: "believable",
     catalyst: "Oil lamp engraved with a caduceus", reagents: [{ name: "Tincture of poppy", tier: 1 }],
-    flavor: "Three guards nod off for 1D minutes." },
+    flavor: "Three alert guards drop where they stand for 1D minutes.",
+    note: "Alert targets make this a Major. Against drowsy night-watchmen it's a Minor: Action 9, 1 MP." },
   { name: "Riposte of Carranza", author: "Suggested", tradition: "Weapon Arts", skill: 3,
     effects: [major("Action becomes a minor action (rapier attacks)", 2)], target: self, duration: "min", belief: "believable",
     catalyst: "Toledo rapier", reagents: [],
@@ -464,9 +465,10 @@ DATA.suggested = [
     catalyst: "Forked hazel rod", reagents: [],
     flavor: "The rod dips over the nearest spring or seam for 1D hours." },
   { name: "Hand of Glory", author: "Suggested", tradition: "Shadow Magic", skill: 2,
-    effects: [minor("Lull a creature to sleep")], target: area(4), duration: "hr", belief: "believable",
+    effects: [minor("Lull a drowsy, sleeping or willing creature to sleep")], target: area(4), duration: "hr", belief: "believable",
     catalyst: "Hand of Glory", reagents: [{ name: "Candle of a hanged man's tallow", tier: 2 }],
-    flavor: "Light the candle in the dead hand. Everyone in a 4\u00d74 area sleeps for 1D hours." },
+    flavor: "Light the candle in the dead hand at night. Those asleep in a 4\u00d74 area cannot wake for 1D hours.",
+    note: "Minor because it works only on sleepers and the drowsy. An awake guard in the area needs the Major version: Action 14, 2 MP, resist 10+." },
   { name: "Bell, Book and Candle", author: "Suggested", tradition: "Anti-Magic", skill: 2,
     effects: [major("Inflict a bane on casting magic", 2)], target: others(1), duration: "hr", belief: "believable",
     catalyst: "Consecrated handbell", reagents: [{ name: "Candle snuffed at the words of excommunication", tier: 2 }],
